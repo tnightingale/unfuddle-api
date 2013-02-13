@@ -3,78 +3,79 @@ var https = require('https'),
     RSVP = require('rsvp'),
     restify = require('restify');
 
-module.exports = function () {
+var domain = "https://{s}.unfuddle.com",
+    version = 'v1';
 
-    /**
-     * TODO: Currently these are behaving as if they're static variables.
-     */
-    var client,
-        domain = "https://{s}.unfuddle.com",
-        version = 'v1',
-        cache = {
-            projects: [],
-            tickets: []
-        };
+module.exports = Unfuddle;
 
-    var Unfuddle = function (subdomain, user, password) {
-        client = restify.createJsonClient({
-            url: domain.replace('{s}', subdomain)
+function Unfuddle(subdomain, user, password) {
+    this.cache = { projects: [], tickets: [] };
+    this.client = restify.createJsonClient({
+        url: domain.replace('{s}', subdomain)
+    });
+    this.client.basicAuth(user, password);
+}
+
+Unfuddle.prototype.ticket = function (project_id, number) {
+    var promise = new RSVP.Promise(),
+        ticket = this.checkCache('tickets', function (t) {
+            return t.number === number && t.project_id === project_id;
         });
-        client.basicAuth(user, password);
+
+    if (ticket) {
+        promise.resolve(ticket);
+    }
+    else {
+        var cache = this.cache,
+            path = '/api/{v}/projects/{id}/tickets/by_number/{number}'
+                    .replace('{v}', version)
+                    .replace('{id}', project_id)
+                    .replace('{number}', number);
+
+        this.client.get(path, function (err, req, res, obj) {
+            if (err) promise.reject({ err: err, req: req, res: res, obj: obj });
+
+            cache.tickets.push(obj);
+            promise.resolve(obj);
+        });
     }
 
-    Unfuddle.prototype.ticket = function (project_id, number) {
-        var promise = new RSVP.Promise(),
-            ticket = this.checkCache('tickets', function (t) {
-                return t.number === number && t.project_id === project_id;
-            });
+    return promise;
+};
 
-        if (ticket) {
-            promise.resolve(ticket);
-        }
-        else {
-            var path = '/api/{v}/projects/{id}/tickets/by_number/{number}'
-                        .replace('{v}', version)
-                        .replace('{id}', project_id)
-                        .replace('{number}', number);
+Unfuddle.prototype.projects = function () {
+    var cache = this.cache,
+        promise = new RSVP.Promise();
 
-            client.get(path, function (err, req, res, obj) {
-                if (err) promise.reject({ err: err, req: req, res: res, obj: obj });
+    if (cache.projects.length) {
+        promise.resolve(cache.projects)
+    }
+    else {
+        this.client.get('/api/' + version + '/projects', function (err, req, res, obj) {
+            if (err) promise.reject({ err: err, req: req, res: res, obj: obj });
 
-                cache.tickets.push(obj);
-                promise.resolve(obj);
-            });
-        }
-
-        return promise;
+            cache.projects = obj;
+            promise.resolve(obj);
+        });
     };
 
-    Unfuddle.prototype.projects = function () {
-        var promise = new RSVP.Promise();
+    return promise;
+};
 
-        if (cache.projects.length) {
-            promise.resolve(cache.projects)
-        }
-        else {
-            client.get('/api/' + version + '/projects', function (err, req, res, obj) {
-                if (err) promise.reject({ err: err, req: req, res: res, obj: obj });
+Unfuddle.prototype.projectById = function (id) {
+    var promise = new RSVP.Promise(),
+        project = this.checkCache('projects', function (p) { return p.id === id; });
 
-                cache.projects = obj;
-                promise.resolve(obj);
-            });
-        };
-
-        return promise;
-    };
-
-    Unfuddle.prototype.projectById = function (id) {
-        var promise = new RSVP.Promise();
-
-        var path = '/api/{v}/projects/{id}'
+    if (project) {
+        promise.resolve(project);
+    }
+    else {
+        var cache = this.cache,
+            path = '/api/{v}/projects/{id}'
                         .replace('{v}', version)
                         .replace('{id}', id);
 
-        client.get(path, function (err, req, res, obj) {
+        this.client.get(path, function (err, req, res, obj) {
             if (err) {
                 if (err.statusCode === 404) {
                     err = new restify.ResourceNotFoundError("Project: '" + id + "', not found");
@@ -85,18 +86,25 @@ module.exports = function () {
             cache.projects.push(obj);
             promise.resolve(obj);
         });
+    }
 
-        return promise;
-    };
+    return promise;
+};
 
-    Unfuddle.prototype.projectByShortName = function (name) {
-        var promise = new RSVP.Promise();
+Unfuddle.prototype.projectByShortName = function (name) {
+    var promise = new RSVP.Promise(),
+        project = this.checkCache('projects', function (p) { return p.short_name == name; });
 
-        var path = '/api/{v}/projects/by_short_name/{name}'
+    if (project) {
+        promise.resolve(project);
+    }
+    else {
+        var cache = this.cache,
+            path = '/api/{v}/projects/by_short_name/{name}'
                     .replace('{v}', version)
                     .replace('{name}', name);
 
-        client.get(path, function (err, req, res, obj) {
+        this.client.get(path, function (err, req, res, obj) {
             if (err) {
                 if (err.statusCode === 404) {
                     err = new restify.ResourceNotFoundError("Project: '" + name + "', not found");
@@ -107,19 +115,14 @@ module.exports = function () {
             cache.projects.push(obj);
             promise.resolve(obj);
         });
+    }
 
-        return promise;
-    };
+    return promise;
+};
 
-    Unfuddle.prototype.checkCache = function (bin, condition) {
-        if (bin in cache && cache[bin].length) {
-            return _.find(cache[bin], condition);
-        }
-    };
-
-    Unfuddle.prototype.ticketUrl = function (ticket) {
-        return "https://" + domain + "/projects/" + ticket.project_id + "/tickets/by_number/" + ticket.number;
-    };
-
-    return Unfuddle;
-}();
+Unfuddle.prototype.checkCache = function (bin, condition) {
+    var cache = this.cache;
+    if (bin in cache && cache[bin].length) {
+        return _.find(cache[bin], condition);
+    }
+};
