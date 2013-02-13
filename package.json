@@ -1,0 +1,28 @@
+{
+  "name": "unfuddle",
+  "version": "0.0.0",
+  "description": "Light javascript wrapper around Unfuddle's REST API. Asynchronous, makes use of Promises/A compliant promises.",
+  "main": "unfuddle.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tnightingale/unfuddle-api.git"
+  },
+  "keywords": [
+    "unfuddle",
+    "api",
+    "rest",
+    "json"
+  ],
+  "author": "Tom Nightingale",
+  "license": "BSD",
+  "readmeFilename": "README.md",
+  "gitHead": "6f1f2835b7280139aa964534e4fee73ed829290f",
+  "dependencies": {
+    "restify": "~2.2.1",
+    "rsvp": "~1.2.0",
+    "underscore": "~1.4.4"
+  }
+}
