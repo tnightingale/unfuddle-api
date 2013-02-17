@@ -26,6 +26,7 @@
     "underscore": "~1.4.4"
   },
   "devDependencies": {
+    "mocha": "~1.8.1",
     "sandboxed-module": "~0.2.0",
     "should": "~1.2.1"
   }
