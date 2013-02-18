@@ -6,14 +6,11 @@ module.exports = restify;
 
 function MockUnfuddleClient() {
     this._listeners = [];
-    this._projects = [
-        { id: 1, title: "Project 1" },
-        { id: 2, title: "Project 2" }
-    ];
-    this._tickets = [
-        { number: 1, project_id: 1, summary: "Ticket 1 summary"}
-    ];
+    this._projects = [];
+    this._tickets = [];
     this.listen(/^\/api\/v1\/projects$/, this.projects);
+    this.listen(/^\/api\/v1\/projects\/(\d+)$/, this.projectById);
+    this.listen(/^\/api\/v1\/projects\/by_short_name\/(\w+)$/, this.projectByShortName);
     this.listen(/^\/api\/v1\/projects\/(\d+)\/tickets\/by_number\/(\d+)$/, this.ticketByNumber);
 }
 
@@ -38,6 +35,26 @@ MockUnfuddleClient.prototype.get = function (path, cb) {
 
 MockUnfuddleClient.prototype.projects = function (cb) {
     cb(null, {}, {}, this._projects);
+};
+
+MockUnfuddleClient.prototype.projectById = function (id, cb) {
+    this._projects.forEach(function (project) {
+        if (project.id === +id) {
+            cb(null, {}, {}, project);
+            return;
+        }
+    });
+    this.HttpRes404(cb);
+};
+
+MockUnfuddleClient.prototype.projectByShortName = function (name, cb) {
+    this._projects.forEach(function (project) {
+        if (project.short_name === name) {
+            cb(null, {}, {}, project);
+            return;
+        }
+    });
+    this.HttpRes404(cb);
 };
 
 MockUnfuddleClient.prototype.ticketByNumber = function (project_id, number, cb) {
