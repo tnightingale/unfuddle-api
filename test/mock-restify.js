@@ -1,9 +1,5 @@
 var restify = require('restify');
 
-restify.createJsonClient = function (options) { return new MockUnfuddleClient(); };
-
-module.exports = restify;
-
 function MockUnfuddleClient() {
     this._listeners = [];
     this._projects = [];
@@ -70,3 +66,6 @@ MockUnfuddleClient.prototype.ticketByNumber = function (project_id, number, cb) 
 MockUnfuddleClient.prototype.HttpRes404 = function (cb) {
     cb({ statusCode: 404 }, {}, {}, null);
 };
+
+restify.createJsonClient = function (options) { return new MockUnfuddleClient(); };
+module.exports = restify;

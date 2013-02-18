@@ -6,8 +6,6 @@ var Util = require('util'),
 var domain = "https://{s}.unfuddle.com",
     version = 'v1';
 
-module.exports = Unfuddle;
-
 function Unfuddle(subdomain, user, password) {
     this.cache = { projects: [], tickets: [] };
     this.client = restify.createJsonClient({
@@ -15,6 +13,8 @@ function Unfuddle(subdomain, user, password) {
     });
     this.client.basicAuth(user, password);
 }
+
+module.exports = Unfuddle;
 
 Unfuddle.prototype.ticket = function (project_id, number) {
     var promise = new RSVP.Promise(),
@@ -48,15 +48,17 @@ Unfuddle.prototype.projects = function () {
         promise = new RSVP.Promise();
 
     if (cache.projects.length) {
-        promise.resolve(cache.projects)
+        promise.resolve(cache.projects);
     }
     else {
         this.client.get(Util.format('/api/%s/projects', version), function (err, req, res, obj) {
-            if (err) promise.reject(this.error(err, "Unable to get list of projects"));
+            if (err) {
+                promise.reject(this.error(err, "Unable to get list of projects"));
+            }
             cache.projects = obj;
             promise.resolve(obj);
         }.bind(this));
-    };
+    }
 
     return promise;
 };
@@ -87,7 +89,7 @@ Unfuddle.prototype.projectById = function (id) {
 
 Unfuddle.prototype.projectByShortName = function (name) {
     var promise = new RSVP.Promise(),
-        project = this.checkCache('projects', function (p) { return p.short_name == name; });
+        project = this.checkCache('projects', function (p) { return p.short_name === name; });
 
     if (project) {
         promise.resolve(project);
@@ -118,8 +120,7 @@ Unfuddle.prototype.checkCache = function (bin, condition) {
 
 Unfuddle.prototype.error = function (err, message) {
     if ('statusCode' in err) {
-        switch(err.statusCode) {
-            case 404:
+        if (err.statusCode === 404) {
             err = new restify.ResourceNotFoundError(message || "");
         }
     }

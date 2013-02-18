@@ -3,7 +3,7 @@ var should = require('should'),
 
 var Unfuddle = SandboxedModule.require('../unfuddle', {
         requires: {
-            'restify': require('./mock-restify'),
+            'restify': require('./mock-restify')
         }
     });
 
