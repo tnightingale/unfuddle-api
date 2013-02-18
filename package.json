@@ -17,7 +17,7 @@
     "json"
   ],
   "author": "Tom Nightingale",
-  "license": "BSD",
+  "license": "FreeBSD",
   "readmeFilename": "README.md",
   "gitHead": "6f1f2835b7280139aa964534e4fee73ed829290f",
   "dependencies": {
