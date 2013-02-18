@@ -41,4 +41,20 @@ suite('Unfuddle', function () {
             });
         });
     });
+
+    suite('#projects()', function () {
+        test('should return Promises/A promise', function () {
+            var promise = unf.projects();
+            promise.should.be.a('object').and.have.property('then');
+            promise.then.should.be.a('function');
+        });
+
+        test('should return a list of projects', function (done) {
+            var success = function (projects) {
+                projects.should.be.an.instanceOf(Array);
+                done();
+            };
+            unf.projects().then(success, done);
+        });
+    });
 });
