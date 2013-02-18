@@ -1,6 +1,6 @@
 {
   "name": "unfuddle",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Light javascript wrapper around Unfuddle's REST API. Asynchronous, makes use of Promises/A compliant promises.",
   "main": "unfuddle.js",
   "scripts": {
