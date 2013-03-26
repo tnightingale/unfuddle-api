@@ -69,20 +69,20 @@ Unfuddle.prototype.projectById = function (id) {
 
     if (project) {
         promise.resolve(project);
+        return promise;
     }
-    else {
-        var cache = this.cache,
-            path = Util.format('/api/%s/projects/%d', version, id);
 
-        this.client.get(path, function (err, req, res, obj) {
-            if (err) {
-                var message = "Project: %d, not found.";
-                promise.reject(this.error(err, Util.format(message, id)));
-            }
-            cache.projects.push(obj);
-            promise.resolve(obj);
-        }.bind(this));
-    }
+    var cache = this.cache,
+        path = Util.format('/api/%s/projects/%d', version, id);
+
+    this.client.get(path, function (err, req, res, obj) {
+        if (err) {
+            var message = Util.format("Couldn't load project: %s.", id);
+            return promise.reject(this.error(err, message));
+        }
+        cache.projects.push(obj);
+        return promise.resolve(obj);
+    }.bind(this));
 
     return promise;
 };
@@ -93,20 +93,20 @@ Unfuddle.prototype.projectByShortName = function (name) {
 
     if (project) {
         promise.resolve(project);
+        return promise;
     }
-    else {
-        var cache = this.cache,
-            path = Util.format('/api/%s/projects/by_short_name/%s', version, name);
 
-        this.client.get(path, function (err, req, res, obj) {
-            if (err) {
-                var message = "Project: %s, not found.";
-                promise.reject(this.error(err, Util.format(message, name)));
-            }
-            cache.projects.push(obj);
-            promise.resolve(obj);
-        }.bind(this));
-    }
+    var cache = this.cache,
+        path = Util.format('/api/%s/projects/by_short_name/%s', version, name);
+
+    this.client.get(path, function (err, req, res, obj) {
+        if (err) {
+            var message = Util.format("Couldn't load project: %s.", name);
+            return promise.reject(this.error(err, message));
+        }
+        cache.projects.push(obj);
+        return promise.resolve(obj);
+    }.bind(this));
 
     return promise;
 };
@@ -118,10 +118,17 @@ Unfuddle.prototype.checkCache = function (bin, condition) {
     }
 };
 
-Unfuddle.prototype.error = function (err, message) {
-    if ('statusCode' in err) {
-        if (err.statusCode === 404) {
-            err = new restify.ResourceNotFoundError(message || "");
+Unfuddle.prototype.error = function (err, message, status_code) {
+    if ('statusCode' in err) status_code = err.statusCode;
+
+    message = message || "";
+
+    if (status_code) {
+        switch (+status_code) {
+            case 404:
+            return new restify.ResourceNotFoundError(message);
+            case 409:
+            return new restify.NotAuthorizedError(message);
         }
     }
     return err;
