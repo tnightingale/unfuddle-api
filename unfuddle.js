@@ -102,7 +102,7 @@ Unfuddle.prototype.projectByShortName = function (name) {
     this.client.get(path, function (err, req, res, obj) {
         if (err) {
             var message = Util.format("Couldn't load project: %s.", name);
-            return promise.reject(this.error(err, message));
+            return promise.reject(this.error(err, message, res.statusCode));
         }
         cache.projects.push(obj);
         return promise.resolve(obj);
@@ -120,15 +120,14 @@ Unfuddle.prototype.checkCache = function (bin, condition) {
 
 Unfuddle.prototype.error = function (err, message, status_code) {
     if ('statusCode' in err) status_code = err.statusCode;
-
     message = message || "";
 
     if (status_code) {
         switch (+status_code) {
             case 404:
             return new restify.ResourceNotFoundError(message);
-            case 409:
-            return new restify.NotAuthorizedError(message);
+            case 401:
+            return new restify.InvalidCredentialsError(message);
         }
     }
     return err;
